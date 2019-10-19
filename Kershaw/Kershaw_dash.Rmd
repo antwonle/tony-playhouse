@@ -1,0 +1,157 @@
+---
+title: "Storyboard Commentary"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8)
+```
+
+```{r message=FALSE, warning=FALSE, include = FALSE}
+#Loading Libraries
+library(dplyr)
+library(ggplot2)
+library(tibble)
+library(knitr)
+
+#Importing CSV for Kershaw
+regular = read.csv('kershaw_regular.csv', header = TRUE)
+post = read.csv('kershaw_post.csv', header = TRUE)
+
+#Making Data into Tibbles
+regular = as_tibble(regular)
+post = as_tibble(post)
+
+#Filtering out data  to years Dodgers went to playoffs
+regular = dplyr::select(regular, X, ERA, AVG)
+regular = filter(regular, X != 2010, 2011, 2012)
+regular = rename(regular, Season = X)
+
+post = dplyr:: select(post, Season, ERA, AVG)
+
+#Merging data frames
+kershaw = merge(regular, post, by = 'Season')
+kershaw = rename(kershaw, era_reg = ERA.x, avg_reg = AVG.x, era_post = ERA.y, avg_post = AVG.y, season = Season)
+
+#Filtering out Career Average
+kershaw_data = filter(kershaw, season != 'MLB Career')
+```
+
+```{r, include = FALSE}
+kershaw_era_plot = ggplot(data = kershaw_data, aes(x = season, group = 1)) + 
+  geom_point(aes(y = era_reg, color = 'Regular Season'), size = 2) + 
+  geom_line(aes(y = era_reg, color = 'Regular Season')) +
+  geom_point(aes(y = era_post, color = 'Post Season'), size = 2) +
+  geom_line(aes(y = era_post, color = 'Post Season')) +
+  xlab('Season') +
+  ylab('ERA') + 
+  ggtitle('Clayton Kershaw ERA During Regular and Post Season') +
+  theme(axis.title = element_text(size = 15, face = 'bold'),
+        plot.title = element_text(size = 18, hjust = 0.5)) 
+```
+
+
+```{r, include = FALSE}
+avg_plot = ggplot(data = kershaw_data, aes(x = season, group = 1)) + 
+  geom_point(aes(y = avg_reg, color = 'Regular Season'), size = 2) + 
+  geom_line(aes(y = avg_reg, color = 'Regular Season')) +
+  geom_point(aes(y = avg_post, color = 'Post Season'), size = 2) +
+  geom_line(aes(y = avg_post, color = 'Post Season')) +
+  xlab('Season') + 
+  ylab('AVG') + 
+  ggtitle('MLB Batting Average Against Kershaw') +
+  theme(axis.title = element_text(size = 15, face = 'bold'),
+        plot.title = element_text(size = 18, hjust = 0.5))
+```
+
+```{r, include = FALSE}
+mlb_era = read.csv('mlb_avg_era.csv', header = TRUE)
+
+#Turning dataframe into Tibble
+mlb_era = as_tibble(mlb_era)
+```
+
+```{r, include = FALSE}
+mlb_era_avg_plot = ggplot(data = mlb_era, aes(x = season, group = 1)) + geom_line(aes(y = reg_era, color = 'Regular Season')) + 
+  geom_line(aes(y = post_era, color = 'Post Season')) + geom_point(aes(y = reg_era, color = 'Regular Season'), size = 2) +
+  geom_point(aes(y = post_era, color = 'Post Season'), size = 2) +
+  xlab('Season') + ylab('ERA') + ggtitle('MLB Average ERA in Regular and Post Season') +
+  theme(axis.title = element_text(size = 15, face = 'bold'),
+        plot.title = element_text(size = 18, hjust = 0.5)) 
+```
+
+```{r, include = FALSE}
+mlb_kershaw_df = merge(mlb_era, kershaw_data, by = 'season')
+mlb_kershaw_df = rename(mlb_kershaw_df, kershaw_era_reg = era_reg, kershaw_era_post = era_post)
+
+mlb_kershaw_era_reg_plot = ggplot(data = mlb_kershaw_df, aes(x = season, group = 1)) + 
+  geom_line(aes(y = reg_era, color = 'MLB')) + 
+  geom_line(aes(y = kershaw_era_reg, color = 'Kershaw')) + 
+  geom_point(aes(y = kershaw_era_reg, color = 'Kershaw'), size = 2) +
+  geom_point(aes(y = reg_era, color = 'MLB'), size = 2) +
+  xlab('Season') + 
+  ylab('ERA') +
+  ggtitle("Average MLB ERA Compared to Kershaw's ERA Regular Season") +
+  theme(axis.title = element_text(size = 15, face = 'bold'),
+        plot.title = element_text(size = 18, hjust = 0.5)) 
+```
+
+
+```{r, include = FALSE}
+#Comparing Kershaws ERA of MLB's average to Kershaw in post season
+mlb_kershaw_era_post_plot = ggplot(data = mlb_kershaw_df, aes(x = season, group = 1)) + 
+  geom_line(aes(y = post_era, color = 'MLB')) + 
+  geom_line(aes(y = kershaw_era_post, color = 'Kershaw')) + 
+  geom_point(aes(y = kershaw_era_post, color = 'Kershaw'), size = 2) +
+  geom_point(aes(y = post_era, color = 'MLB'), size = 2) +
+  xlab('Season') +
+  ylab('ERA') +
+  ggtitle("Average MLB ERA Compared to Kershaw's ERA Post Season") +
+  theme(axis.title = element_text(size = 15, face = 'bold'),
+        plot.title = element_text(size = 18, hjust = 0.5))
+```
+
+### Introduction
+Clayton Kershaw has been considered as one of the greatest pitchers during this generation. His accolades of 8 time All-Star, 3 time National League Cy Young Award Winner, and 2014 National League MVP contribute to this title. His performace since his debut have backed up the belief that he is a future hall of famer. 
+Although he is considered one of the greatest pitchers, Kershaw has a tendency to 'choke' during the post season. His ERA has consistenly been higher in the post season when comparing it to his regular season ERA. Looking at Kershaw's ERA data throughout his seasons, we will try to see if he is really that much worse during the post season.
+
+### Kershaw ERA
+
+```{r, echo = FALSE}
+kershaw_era_plot
+```
+
+---
+
+asdjknasjkndlankwd nlakn lksnldnalsndsanlkd nalsknd lkasnldk naslknd lasndl nsalkndl asnkldn alksnd lksanlkd naslkndl ad
+
+### Batting Average Against Kershaw
+
+```{r, echo = FALSE}
+avg_plot
+```
+
+---
+
+Some commentary about Frame 2.
+
+### Average MLB ERA
+
+```{r, echo = FALSE}
+mlb_era_avg_plot
+```
+
+---
+
+Commentary
+
+### Kershaw Against Average MLB ERA
+```{r, echo = FALSE}
+gridExtra::grid.arrange(mlb_kershaw_era_reg_plot, mlb_kershaw_era_post_plot)
+```
+
+---
+
+Commentary
